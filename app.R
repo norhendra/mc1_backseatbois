@@ -1,5 +1,3 @@
-# app.R
-
 library(shiny)
 library(bslib)
 library(jsonlite)
@@ -8,7 +6,7 @@ library(tidyr)
 library(lubridate)
 library(plotly)
 library(tibble)
-# Test 1
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Theme & CSS
 # ──────────────────────────────────────────────────────────────────────────────
@@ -21,82 +19,16 @@ spotify_theme <- bs_theme(
   base_font = font_google("Inter")
 )
 
-custom_css <- HTML("
-  /* Top taskbar */
-  #topbar {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    padding: 0 240px;
-    background: linear-gradient(90deg,#006400,#1DB954);
-    z-index: 1030;
-  }
-  .nav-btn {
-    margin-right: 16px;
-    font-weight: 700;
-    background: transparent;
-    border: none;
-    color: #e0e0e0;
-    font-size: 1rem;
-  }
-  .nav-btn.active, .nav-btn:hover {
-    color: #fff;
-    border-bottom: 3px solid #fff;
-  }
+custom_css <- HTML("\
+  /* Top taskbar */\n  #topbar { position: fixed; top: 0; left: 0; right: 0; height: 60px; display: flex; align-items: center; padding: 0 240px; background: linear-gradient(90deg,#006400,#1DB954); z-index:1000;}\n  .nav-icon, .nav-btn { background:transparent; border:none; color:#e0e0e0; margin-right:16px;}\n  .nav-icon { font-size:1.5rem; }\n  .nav-btn { font-weight:700; font-size:1rem; }\n  .nav-icon.active, .nav-btn.active, .nav-icon:hover, .nav-btn:hover { color:#fff; border-bottom:3px solid #fff; }\n  /* Left sidebar */\n  #sidebar-left { position: fixed; top:60px; left:0; bottom:0; width:240px; background:#000; padding:20px; overflow-y:auto; }\n  #sidebar-left h4 { color:#1DB954; margin:0 0 8px; font-weight:800;}\n  #sidebar-left select, #sidebar-left input { background:#181818; color:#fff; border:1px solid #333; margin-bottom:16px; width:100%; }\n  /* Main content */\n  #main { margin-top:80px; margin-left:260px; margin-right:360px; padding:20px; }\n  /* Right sidebar */\n  #sidebar-right { position:fixed; top:60px; right:0; bottom:0; width:300px; background:#000; padding:24px; overflow-y:auto; }\n  #sidebar-right .cover-img { width:100%; border-radius:8px; margin-bottom:16px; }\n  #sidebar-right h4 { color:#FFFFFF; margin:16px 0 8px; font-weight:800; }\n  #sidebar-right a { color:#1DB954; text-decoration:none; font-weight:600; }\n")
 
-  /* Left sidebar */
-  #sidebar-left {
-    position: fixed;
-    top: 60px; left: 0; bottom: 0;
-    width: 220px;
-    background-color: #000;
-    padding: 24px 18px;
-    overflow-y: auto;
-  }
-  #sidebar-left h4 { color:#1DB954; margin:0 0 18px; font-weight:800; }
-  #sidebar-left label { color:#b3b3b3; font-weight:600; margin-top:16px; }
-  #sidebar-left .selectize-input { background:#181818; border:none; }
-
-  /* Right sidebar */
-  #sidebar-right {
-    position: fixed;
-    top: 60px; right: 0; bottom: 0;
-    width: 300px;
-    background-color: #000;
-    padding: 24px;
-    overflow-y: auto;
-  }
-  #sidebar-right img { width:100%; border-radius:8px; }
-  #sidebar-right h4 { color:#1DB954; margin-top:18px; font-weight:800; }
-  #sidebar-right p { text-align:justify; line-height:1.45; }
-
-  /* Main content */
-  #main {
-    margin-top: 80px;
-    margin-left: 240px;
-    margin-right: 320px;
-    padding: 0 32px 32px 32px;
-  }
-")
-
-# ──────────────────────────────────────────────────────────────────────────────
-# JS to toggle .active on your buttons
-# ──────────────────────────────────────────────────────────────────────────────
-custom_js <- HTML("
-  Shiny.addCustomMessageHandler('highlightTab', function(btnId) {
-    $('.nav-btn').removeClass('active');
-    $('#' + btnId).addClass('active');
-  });
-")
+custom_js <- HTML("Shiny.addCustomMessageHandler('highlightTab', function(btnId) { $('.nav-icon, .nav-btn').removeClass('active'); $('#' + btnId).addClass('active'); });")
 
 # ──────────────────────────────────────────────────────────────────────────────
 # UI
 # ──────────────────────────────────────────────────────────────────────────────
 ui <- fluidPage(
   theme = spotify_theme,
-  
   tags$head(
     tags$style(custom_css),
     tags$script(custom_js)
@@ -105,145 +37,76 @@ ui <- fluidPage(
   # Top taskbar
   tags$div(
     id = "topbar",
-    actionButton("tab_home",    "HOME",          class = "nav-btn"),
-    actionButton("tab_summary", "Summary Page",  class = "nav-btn"),
-    actionButton("tab_sailor",  "Sailor Shift",  class = "nav-btn"),
-    actionButton("tab_oceanus", "Oceanus Folk",  class = "nav-btn active"),
-    actionButton("tab_other",   "Other Artists", class = "nav-btn")
+    actionButton("btn_home",    NULL,           icon = icon("home"),        class = "nav-icon"),
+    actionButton("btn_play",    NULL,           icon = icon("play-circle"), class = "nav-icon"),
+    actionButton("nav_summary", "Summary",     class = "nav-btn"),
+    actionButton("nav_sailor",  "Sailor Shift",class = "nav-btn"),
+    actionButton("nav_oceanus","Oceanus Folk",class = "nav-btn active"),
+    actionButton("nav_other",  "Other Artists",class = "nav-btn")
   ),
   
-  # Left sidebar
+  # Left sidebar controls
   tags$div(
     id = "sidebar-left",
-    h4("Plot Controls"),
-    selectInput("sailor_plot",  "Sailor Shift",  choices = c("Select a Plot")),
-    selectInput("oceanus_plot", "Oceanus Folk",  choices = c("Select a Plot")),
-    selectInput("artist_plot",  "Top Artists",   choices = c("Select a Plot")),
-    actionButton("submit_plots","Submit",         class = "btn btn-success", width = "100%")
+    h4("Oceanus Folk"),
+    selectInput("direction", "Outward Influences", choices = c("Outward Influences","Inward Influences")),
+    h4("Plot 1"),
+    selectInput("plot1", "Network - Outward", choices = c("Network - Outward","Network - Inward")),
+    h4("Select by ID"),
+    selectInput("select_id", "Oceanus Folk", choices = c("Oceanus Folk","Artist A","Artist B")),
+    h4("Plot 2"),
+    selectInput("plot2", "Plotly - Outward", choices = c("Plotly - Outward","Plotly - Inward")),
+    h4("Genre"),
+    selectInput(
+      "genre", "Genre",
+      choices = c("Americana","Indie Folk","Indie Rock","Blues Rock","Celtic Folk"),
+      selected = "Americana", multiple = TRUE, selectize = FALSE, size = 6
+    )
   ),
   
-  # Right sidebar
-  tags$div(
-    id = "sidebar-right",
-    img(src = "sailorshift2.png", alt = "Artist"),
-    h4("About the Artist"),
-    htmlOutput("artist_title"),
-    htmlOutput("artist_bio")
-  ),
-  
-  # Main content (Shiny’s built-in nav will appear under your CSS’d bar)
+  # Main content: two plots + description
   tags$div(
     id = "main",
-    tabsetPanel(
-      id       = "tabs",
-      selected = "oceanus",
-      
-      tabPanel(
-        title = "Home", value = "home",
-        fluidRow(column(12, h2("Welcome to the Home Page")))
-      ),
-      
-      tabPanel(
-        title = "Summary Page", value = "summary",
-        fluidRow(column(12, h2("Summary Overview")))
-      ),
-      
-      tabPanel(
-        title = "Sailor Shift", value = "sailor",
-        fluidRow(column(12, h2("Plots for Sailor Shift")))
-      ),
-      
-      tabPanel(
-        title = "Oceanus Folk", value = "oceanus",
-        fluidRow(column(12, h2("Global Oceanus Folk Influence"))),
-        fluidRow(column(12, plotlyOutput("oceanus_plot")))
-      ),
-      
-      tabPanel(
-        title = "Other Artists", value = "other",
-        fluidRow(column(12, h2("Plots for Other Artists")))
+    fluidRow(
+      column(6, plotOutput("network_plot",  height = "400px")),
+      column(6, plotlyOutput("influence_plot", height = "400px"))
+    ),
+    fluidRow(
+      column(12,
+             tags$h4("General Overview"),
+             htmlOutput("general_overview")
       )
     )
+  ),
+  
+  # Right sidebar summary + cover + bio
+  tags$div(
+    id = "sidebar-right",
+    h3("Summary", style = "color:#FFFFFF; margin-top:0; margin-bottom:12px;"),
+    selectInput(
+      "summary", NULL,
+      choices = c("Oceanus Folk","Sailor Shift","Other Artists"),
+      selected = "Oceanus Folk", width = "100%"
+    ),
+    tags$img(
+      src   = "OceanusFolk.png",
+      alt   = "Cover image",
+      class = "cover-img"
+    ),
+    tags$h4("About the Genre"),
+    tags$a("Oceanus Folk", href = "#"),
+    htmlOutput("genre_description")
   )
 )
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Server
+# Server (stub)
 # ──────────────────────────────────────────────────────────────────────────────
 server <- function(input, output, session) {
-  
-  # Artist info
-  output$artist_title <- renderUI({
-    tags$h5(strong("Sailor Shift"), style = "color:#fff; margin-top:8px;")
-  })
-  output$artist_bio <- renderUI({
-    tags$p("Sailor Shift is an Oceanus-born artist whose journey from local folk singer to global superstar epitomises both personal drive and cultural impact…")
-  })
-  
-  # Button → tab logic
-  for (nm in c("home","summary","sailor","oceanus","other")) {
-    local({
-      tab <- nm
-      btn <- paste0("tab_", tab)
-      observeEvent(input[[btn]], {
-        updateTabsetPanel(session, "tabs", selected = tab)
-        session$sendCustomMessage("highlightTab", btn)
-      })
-    })
-  }
-  
-  # Oceanus Folk data + plot
-  oceanus_data <- reactive({
-    kg        <- fromJSON("data/MC1_graph.json")
-    nodes_tbl <- as_tibble(kg$nodes)
-    links_tbl <- as_tibble(kg$links)
-    
-    nodes_clean <- nodes_tbl %>%
-      mutate(
-        date_raw    = coalesce(release_date, written_date, notoriety_date),
-        date_parsed = parse_date_time(date_raw,
-                                      orders = c("Ymd","Y-m-d","Y"),
-                                      quiet  = TRUE),
-        year        = year(date_parsed),
-        rowid       = row_number()
-      ) %>%
-      select(rowid, genre, year)
-    
-    edges_clean <- links_tbl %>%
-      rename(source_id = source, target_id = target) %>%
-      left_join(nodes_clean %>% select(rowid), by = c("source_id" = "rowid")) %>% rename(from = rowid) %>%
-      left_join(nodes_clean %>% select(rowid), by = c("target_id" = "rowid")) %>% rename(to   = rowid) %>%
-      filter(!is.na(from) & !is.na(to))
-    
-    yearly_raw <- edges_clean %>%
-      inner_join(
-        nodes_clean %>% filter(genre == "Oceanus Folk") %>% select(rowid),
-        by = c("to" = "rowid")
-      ) %>%
-      left_join(nodes_clean %>% select(rowid, year), by = c("to" = "rowid")) %>%
-      filter(!is.na(year)) %>%
-      count(target_year = year, name = "new_influences")
-    
-    yearly_raw %>%
-      complete(target_year = seq(min(target_year), 2040),
-               fill        = list(new_influences = 0)) %>%
-      arrange(target_year) %>%
-      mutate(cumulative = cumsum(new_influences))
-  })
-  
-  output$oceanus_plot <- renderPlotly({
-    yearly <- oceanus_data()
-    plot_ly(yearly, x=~target_year, y=~new_influences, type="bar", name="Annual") %>%
-      add_trace(y=~cumulative, type="scatter", mode="lines+markers", name="Cumulative") %>%
-      layout(
-        title="Global Oceanus Folk Influence (through 2040)",
-        xaxis=list(title="Year", dtick=5), yaxis=list(title="Count"),
-        legend=list(orientation="h", x=0.5, xanchor="center", y=-0.1)
-      )
-  })
+  output$network_plot <- renderPlot({ plot(1:10, 1:10) })
+  output$influence_plot <- renderPlotly({ plot_ly(x=1:10,y=1:10,type='scatter',mode='lines+markers') })
+  output$general_overview <- renderUI({ HTML('<p>Oceanus Folk’s stylistic reach...</p>') })
+  output$genre_description <- renderUI({ HTML('<p>Oceanus Folk’s story is one of fits and starts...</p>') })
 }
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Run the app
-# ──────────────────────────────────────────────────────────────────────────────
 shinyApp(ui, server)
