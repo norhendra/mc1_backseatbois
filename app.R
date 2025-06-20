@@ -145,48 +145,58 @@ ui <- fluidPage(
       #sidebar-right h4{color:#FFFFFF;margin:16px 0 8px;font-weight:800;}
       .vis-network canvas{background:#ffffff !important;}
     ")),
-    tags$script(HTML(sprintf("
-      document.addEventListener('DOMContentLoaded',function(){
-        var tracks=%s, idx=0,
-            p=document.getElementById('songPlayer'),
-            playBtn=document.getElementById('btn_play'),
-            nextBtn=document.getElementById('btn_next'),
-            ico=playBtn.querySelector('i');
-        p.src=tracks[idx];
+tags$script(HTML(sprintf("
+  document.addEventListener('DOMContentLoaded',function(){
+    var tracks=%s, idx=0,
+        p=document.getElementById('songPlayer'),
+        playBtn=document.getElementById('btn_play'),
+        nextBtn=document.getElementById('btn_next'),
+        ico=playBtn.querySelector('i');
+    p.src=tracks[idx];
 
-        function setIcon(isPlaying){
-          if(isPlaying){
-            ico.classList.remove('fa-play-circle');
-            ico.classList.add('fa-pause-circle');
-          }else{
-            ico.classList.remove('fa-pause-circle');
-            ico.classList.add('fa-play-circle');
-          }
-        }
+    function setIcon(isPlaying){
+      if(isPlaying){
+        ico.classList.remove('fa-play-circle');
+        ico.classList.add   ('fa-pause-circle');
+      }else{
+        ico.classList.remove('fa-pause-circle');
+        ico.classList.add   ('fa-play-circle');
+      }
+    }
 
-        playBtn.onclick=function(){
-          if(p.paused){p.play().catch(()=>{}); setIcon(true);}
-          else        {p.pause();               setIcon(false);}
-        };
-        nextBtn.onclick=function(){
-          idx=(idx+1)%%tracks.length;
-          p.src=tracks[idx]; p.play().catch(()=>{}); setIcon(true);
-        };
-        p.addEventListener('ended',function(){
-          idx=(idx+1)%%tracks.length;
-          p.src=tracks[idx]; p.play().catch(()=>{}); setIcon(true);
-        });
+    /* ---- Play / Pause --------------------------------------------------*/
+    playBtn.onclick=function(){
+      if(p.paused){ p.play().then(()=>setIcon(true)).catch(()=>setIcon(false)); }
+      else        { p.pause();              setIcon(false); }
+    };
 
-        var nav=['nav_summary','nav_sailor','nav_oceanus','nav_other'];
-        nav.forEach(function(id){
-          document.getElementById(id).onclick=function(){
-            nav.forEach(function(x){document.getElementById(x).classList.remove('active');});
-            this.classList.add('active');
-            Shiny.setInputValue('activeTab',id,{priority:'event'});
-          };
-        });
-      });
-    ", toJSON(tracks, auto_unbox = TRUE))))
+    /* ---- NEXT  (EDIT #1) ----------------------------------------------*/
+    nextBtn.onclick=function(){
+      idx=(idx+1)%%tracks.length;
+      p.src=tracks[idx];
+      /* attempt to auto-play; if browser blocks, leave icon as “play” */
+      p.play().then(()=>setIcon(true)).catch(()=>setIcon(false));   // ← changed
+    };
+
+    /* ---- Auto-advance on ended (EDIT #2) ------------------------------*/
+    p.addEventListener('ended',function(){
+      idx=(idx+1)%%tracks.length;
+      p.src=tracks[idx];
+      p.play().then(()=>setIcon(true)).catch(()=>setIcon(false));   // ← changed
+    });
+
+    /* ---- Nav highlight (unchanged) -----------------------------------*/
+    var nav=['nav_summary','nav_sailor','nav_oceanus','nav_other'];
+    nav.forEach(function(id){
+      document.getElementById(id).onclick=function(){
+        nav.forEach(function(x){document.getElementById(x).classList.remove('active');});
+        this.classList.add('active');
+        Shiny.setInputValue('activeTab',id,{priority:'event'});
+      };
+    });
+  });
+", toJSON(tracks, auto_unbox = TRUE))))
+
   ),
   
   tags$audio(id="songPlayer", controls=NA,
