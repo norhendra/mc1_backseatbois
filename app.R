@@ -6,6 +6,7 @@
 
 # ---- libraries -------------------------------------------------------------
 library(shiny)
+library(dplyr)
 library(bslib)
 library(plotly)
 library(visNetwork)
@@ -13,6 +14,8 @@ library(jsonlite)
 library(tidyverse)
 library(lubridate)
 library(RColorBrewer)
+library(rlang)
+library(igraph)
 
 # ---- paths / filenames -----------------------------------------------------
 cache_rds <- "data/network_tables.rds"
