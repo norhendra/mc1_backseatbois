@@ -130,6 +130,7 @@ ui <- fluidPage(
     tags$style(HTML("
       #topbar{position:fixed;top:0;left:0;right:0;height:60px;display:flex;z-index:1000;}
       #topbar-left{display:flex;align-items:center;background:#1A1A1A;padding:0 24px;min-width:260px;}
+      #topbar-left img {height: 3rem !important;width: auto;}
       #topbar-main{flex:1;display:flex;align-items:center;padding:0 60px;
                    background:linear-gradient(90deg,#006400,#1DB954);}
       .nav-icon,.nav-btn{background:transparent;border:none;color:#e0e0e0;margin-right:16px;}
@@ -148,84 +149,99 @@ ui <- fluidPage(
       #sidebar-right h4{color:#FFFFFF;margin:16px 0 8px;font-weight:800;}
       .vis-network canvas{background:#ffffff !important;}
     ")),
-tags$script(HTML(sprintf("
-  document.addEventListener('DOMContentLoaded',function(){
-    var tracks=%s, idx=0,
-        p=document.getElementById('songPlayer'),
-        playBtn=document.getElementById('btn_play'),
-        nextBtn=document.getElementById('btn_next'),
-        ico=playBtn.querySelector('i');
-    p.src=tracks[idx];
+    tags$script(HTML(sprintf("
+      document.addEventListener('DOMContentLoaded',function(){
+        var tracks=%s, idx=0,
+            p=document.getElementById('songPlayer'),
+            playBtn=document.getElementById('btn_play'),
+            nextBtn=document.getElementById('btn_next'),
+            ico=playBtn.querySelector('i');
+        p.src=tracks[idx];
 
-    function setIcon(isPlaying){
-      if(isPlaying){
-        ico.classList.remove('fa-play-circle');
-        ico.classList.add   ('fa-pause-circle');
-      }else{
-        ico.classList.remove('fa-pause-circle');
-        ico.classList.add   ('fa-play-circle');
-      }
-    }
+        function setIcon(isPlaying){
+          if(isPlaying){
+            ico.classList.remove('fa-play-circle');
+            ico.classList.add   ('fa-pause-circle');
+          }else{
+            ico.classList.remove('fa-pause-circle');
+            ico.classList.add   ('fa-play-circle');
+          }
+        }
 
-    /* ---- Play / Pause --------------------------------------------------*/
-    playBtn.onclick=function(){
-      if(p.paused){ p.play().then(()=>setIcon(true)).catch(()=>setIcon(false)); }
-      else        { p.pause();              setIcon(false); }
-    };
+        /* ---- Play / Pause --------------------------------------------------*/
+        playBtn.onclick=function(){
+          if(p.paused){ p.play().then(()=>setIcon(true)).catch(()=>setIcon(false)); }
+          else        { p.pause();              setIcon(false); }
+        };
 
-    /* ---- NEXT  (EDIT #1) ----------------------------------------------*/
-    nextBtn.onclick=function(){
-      idx=(idx+1)%%tracks.length;
-      p.src=tracks[idx];
-      /* attempt to auto-play; if browser blocks, leave icon as “play” */
-      p.play().then(()=>setIcon(true)).catch(()=>setIcon(false));   // ← changed
-    };
+        /* ---- NEXT (EDIT #1) ----------------------------------------------*/
+        nextBtn.onclick=function(){
+          idx=(idx+1)%%tracks.length;
+          p.src=tracks[idx];
+          p.play().then(()=>setIcon(true)).catch(()=>setIcon(false));
+        };
 
-    /* ---- Auto-advance on ended (EDIT #2) ------------------------------*/
-    p.addEventListener('ended',function(){
-      idx=(idx+1)%%tracks.length;
-      p.src=tracks[idx];
-      p.play().then(()=>setIcon(true)).catch(()=>setIcon(false));   // ← changed
-    });
+        /* ---- Auto-advance on ended (EDIT #2) ------------------------------*/
+        p.addEventListener('ended',function(){
+          idx=(idx+1)%%tracks.length;
+          p.src=tracks[idx];
+          p.play().then(()=>setIcon(true)).catch(()=>setIcon(false));
+        });
 
-    /* ---- Nav highlight (unchanged) -----------------------------------*/
-    var nav=['nav_summary','nav_sailor','nav_oceanus','nav_other'];
-    nav.forEach(function(id){
-      document.getElementById(id).onclick=function(){
-        nav.forEach(function(x){document.getElementById(x).classList.remove('active');});
-        this.classList.add('active');
-        Shiny.setInputValue('activeTab',id,{priority:'event'});
-      };
-    });
-  });
-", toJSON(tracks, auto_unbox = TRUE))))
+        /* ---- Home button navigates to landing page ------------------------*/
+        document.getElementById('btn_home').onclick = function(){
+          Shiny.setInputValue('activeTab','nav_home',{priority:'event'});
+        };
 
+        /* ---- Nav highlight (unchanged) --------------------------------------*/
+        var nav=['nav_sailor','nav_oceanus','nav_other','nav_group','nav_upcoming'];
+        nav.forEach(function(id){
+          document.getElementById(id).onclick=function(){
+            nav.forEach(function(x){document.getElementById(x).classList.remove('active');});
+            this.classList.add('active');
+            Shiny.setInputValue('activeTab',id,{priority:'event'});
+          };
+        });
+      });
+    ", toJSON(tracks, auto_unbox = TRUE))))
   ),
   
-  tags$audio(id="songPlayer", controls=NA,
-             style="position:absolute;left:-9999px;"),
+  tags$audio(id="songPlayer", controls=NA, style="position:absolute;left:-9999px;"),
   
   tags$div(id="topbar",
            tags$div(id="topbar-left",
-                    actionButton("btn_home", NULL, icon=icon("home"),        class="nav-icon"),
-                    actionButton("btn_play", NULL, icon=icon("play-circle"), class="nav-icon"),
-                    actionButton("btn_next", NULL, icon=icon("forward"),     class="nav-icon")
+                    actionButton(inputId = "btn_home",
+                                 label   = tags$img(src="otv2.png", alt="Home"),
+                                 class   = "nav-icon"),
+                    actionButton("btn_play", NULL, icon = icon("play-circle"), class = "nav-icon"),
+                    actionButton("btn_next", NULL, icon = icon("forward"), class = "nav-icon")
            ),
            tags$div(id="topbar-main",
-                    actionButton("nav_summary","Summary",      class="nav-btn"),
-                    actionButton("nav_sailor", "Sailor Shift", class="nav-btn"),
-                    actionButton("nav_oceanus","Oceanus Folk", class="nav-btn active"),
-                    actionButton("nav_other",  "Other Artists",class="nav-btn")
+                    tags$a("Homepage", href="https://oceanustv.netlify.app", target="_blank", class="nav-btn"),
+                    actionButton("nav_sailor", "Artist Influence Explorer", class = "nav-btn"),
+                    actionButton("nav_oceanus", "Oceanus Folk",               class = "nav-btn active"),
+                    actionButton("nav_other",  "Solo Artist Spotlight",      class = "nav-btn"),
+                    actionButton("nav_group",  "Group Spotlight",            class = "nav-btn"),
+                    actionButton("nav_upcoming","Upcoming Acts",             class = "nav-btn")
            )
-  ),
+  )
+  ,
   
   uiOutput("left_sidebar"),
   uiOutput("main_panel"),
+  
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Right sidebar UI
+  # ─────────────────────────────────────────────────────────────────────────────
   tags$div(id="sidebar-right",
            h3("Summary", style="color:#FFF;margin-top:0;margin-bottom:12px;"),
-           selectInput("summary", NULL,
-                       choices=c("Sailor Shift","Oceanus Folk","Other Artists"),
-                       selected="Sailor Shift", width="100%"),
+           selectInput(
+             inputId = "summary",
+             label   = NULL,
+             choices = c("Sailor Shift","Oceanus Folk","Top Artist","Upcoming Acts"),
+             selected = "Sailor Shift",
+             width    = "100%"
+           ),
            uiOutput("cover_img"),
            uiOutput("about_header"),
            htmlOutput("genre_description")
@@ -237,38 +253,56 @@ tags$script(HTML(sprintf("
 # ════════════════════════════════════════════════════════════════════════════
 server <- function(input, output, session){
   
-  activeTab <- reactive(input$activeTab %||% "nav_oceanus")
+  activeTab <- reactive(input$activeTab %||% "nav_home")
   
   output$left_sidebar <- renderUI({
     switch(activeTab(),
-           "nav_summary"=NULL,
-           "nav_sailor" = div(id="sidebar-left",
-                              h4("Sailor Shift"),
-                              selectInput("direction_sailor","Show interactions:",
-                                          choices=c("All","Inward","Outward"), selected="All")),
-           "nav_oceanus"=div(id="sidebar-left",
-                             h4("Oceanus Folk"),
-                             selectInput("direction","Outward Influences",
-                                         choices=c("Outward Influences","Inward Influences")),
-                             h4("Plot 1"),selectInput("plot1","Network - Outward",
-                                                      choices=c("Network - Outward","Network - Inward")),
-                             h4("Select by ID"),selectInput("select_id","Oceanus Folk",
-                                                            choices=c("Oceanus Folk","Artist A","Artist B")),
-                             h4("Plot 2"),selectInput("plot2","Plotly - Outward",
-                                                      choices=c("Plotly - Outward","Plotly - Inward")),
-                             h4("Genre"),selectInput("genre","Genre",
-                                                     choices=c('Americana','Indie Folk','Indie Rock','Blues Rock','Celtic Folk'),
-                                                     selected='Americana',multiple=TRUE,selectize=FALSE,size=6)),
-           "nav_other"  = div(id="sidebar-left",
-                              h4("Other Artists"),
-                              selectInput("other_artist","Choose artist",
-                                          choices=c("Orla Seabloom","Beatrice Albright","Daniel O’Connell")))
+           "nav_home"    = NULL,
+           "nav_sailor"  = div(id="sidebar-left",
+                               h4("Artist Influence Explorer"),
+                               selectInput("direction_sailor","Show interactions:",
+                                           choices=c("All","Inward","Outward"), selected="All")),
+           "nav_oceanus" = div(id="sidebar-left",
+                               h4("Oceanus Folk"),
+                               selectInput("direction","Outward Influences",
+                                           choices=c("Outward Influences","Inward Influences")),
+                               h4("Plot 1"),selectInput("plot1","Network - Outward",
+                                                        choices=c("Network - Outward","Network - Inward")),
+                               h4("Select by ID"),selectInput("select_id","Oceanus Folk",
+                                                              choices=c("Oceanus Folk","Artist A","Artist B")),
+                               h4("Plot 2"),selectInput("plot2","Plotly - Outward",
+                                                        choices=c("Plotly - Outward","Plotly - Inward")),
+                               h4("Genre"),selectInput("genre","Genre",
+                                                       choices=c('Americana','Indie Folk','Indie Rock','Blues Rock','Celtic Folk'),
+                                                       selected='Americana',multiple=TRUE,selectize=FALSE,size=6)),
+           "nav_other"   = div(id="sidebar-left",
+                               h4("Solo Artist Spotlight"),
+                               selectInput("other_artist","Choose artist",
+                                           choices=c("Orla Seabloom","Beatrice Albright","Daniel O’Connell"))),
+           "nav_group"   = div(id="sidebar-left",
+                               h4("Group Spotlight"),
+                               selectInput("group_spotlight","Choose group",
+                                           choices=c("Ivy Echoes","Oceanus Folk Ensemble","Echoes of Oceanus"))),
+           "nav_upcoming"= div(id="sidebar-left",
+                               h4("Upcoming Acts"),
+                               selectInput("upcoming_act","Choose act",
+                                           choices=c("Rising Tide","New Horizons","Folk Revival")))
     )
   })
   
   output$main_panel <- renderUI({
     switch(activeTab(),
-           "nav_summary" = div(id="main", plotOutput("summaryPlot",height="400px")),
+           "nav_home"    = div(
+             id="main",
+             tags$h2(
+               style="text-align:center;",
+               "Step into the vibrant world of Oceanus TV, where musical journeys come alive! Navigate artist influence maps, uncover solo and group spotlights, and get a sneak peek at rising stars. Ready to explore? Check out our ",
+               tags$a("User Guide",
+                      href="https://oceanustv.netlify.app/userguide/userguide",
+                      target="_blank"),
+               " and let the adventure begin!"
+             )
+           ),
            "nav_sailor"  = div(id="main", visNetworkOutput("sailor_network",height="700px")),
            "nav_oceanus" = div(id="main",
                                fluidRow(
@@ -276,7 +310,9 @@ server <- function(input, output, session){
                                  column(6, plotlyOutput("influence_plot",height="400px")),
                                  column(12, tags$h4("General Overview"), htmlOutput("general_overview"))
                                )),
-           "nav_other"   = div(id="main", plotOutput("otherPlot",height="400px"))
+           "nav_other"   = div(id="main", plotOutput("otherPlot",height="400px")),
+           "nav_group"   = div(id="main", plotOutput("otherPlot",height="400px")),
+           "nav_upcoming"= div(id="main", plotOutput("otherPlot",height="400px"))
     )
   })
   
@@ -305,32 +341,43 @@ server <- function(input, output, session){
   })
   
   output$cover_img <- renderUI({
-    tags$img(src=switch(input$summary,
-                        "Sailor Shift" ="sailorshift2.png",
-                        "Other Artists"="otherartists.png",
-                        "Oceanus Folk" ="OceanusFolk.png"), class="cover-img")
-  })
-  output$about_header <- renderUI({
-    tags$h4(switch(input$summary,
-                   "Oceanus Folk" ="About the Genre",
-                   "Sailor Shift" ="About Sailor Shift",
-                   "Other Artists"="About Other Artists"),
-            style="color:#FFF;margin:16px 0 8px;font-weight:800;")
-  })
-  output$genre_description <- renderUI({
-    HTML(switch(input$summary,
-                "Sailor Shift" ="… Sailor description …",
-                "Oceanus Folk" ="… Oceanus description …",
-                "Other Artists"="… Other Artists description …"))
+    tags$img(
+      src = switch(input$summary,
+                   "Sailor Shift"   = "sailorshift.png",
+                   "Oceanus Folk"   = "OceanusFolk.png",
+                   "Top Artist"     = "topartist.png",
+                   "Upcoming Acts"  = "upcomingact.png"
+      ),
+      class = "cover-img"
+    )
   })
   
-  output$summaryPlot <- renderPlot({ hist(rnorm(100)) })
-  output$network_plot <- renderPlot({ plot(1:10,1:10) })
-  output$influence_plot <- renderPlotly({
-    plot_ly(x=1:10,y=1:10,type="scatter",mode="lines+markers") })
-  output$general_overview <- renderUI({
-    HTML("<p>Oceanus Folk’s stylistic reach...</p>") })
-  output$otherPlot <- renderPlot({ boxplot(matrix(rnorm(100), ncol=5)) })
+  output$about_header <- renderUI({
+    tags$h4(
+      switch(input$summary,
+             "Sailor Shift"   = "About Sailor Shift",
+             "Oceanus Folk"   = "About the Genre",
+             "Top Artist"     = "About Top Artist",
+             "Upcoming Acts"  = "About Upcoming Acts"
+      ),
+      style="color:#FFF;margin:16px 0 8px;font-weight:800;"
+    )
+  })
+  
+  output$genre_description <- renderUI({
+    HTML(switch(input$summary,
+                "Sailor Shift"   = "… Sailor description …",
+                "Oceanus Folk"   = "… Oceanus description …",
+                "Top Artist"     = "… Top Artist description …",
+                "Upcoming Acts"  = "… Upcoming Acts description …"
+    ))
+  })
+  
+  # Existing plot/render functions for non-network tabs
+  output$otherPlot      <- renderPlot({ boxplot(matrix(rnorm(100), ncol=5)) })
+  output$network_plot   <- renderPlot({ plot(1:10,1:10) })
+  output$influence_plot <- renderPlotly({ plot_ly(x=1:10,y=1:10,type="scatter",mode="lines+markers") })
+  output$general_overview <- renderUI({ HTML("<p>Oceanus Folk’s stylistic reach...</p>") })
 }
 
 shinyApp(ui, server)
