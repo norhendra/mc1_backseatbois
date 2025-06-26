@@ -218,9 +218,9 @@ ui <- fluidPage(
            ),
            tags$div(id="topbar-main",
                     tags$a("Homepage", href="https://oceanustv.netlify.app", target="_blank", class="nav-btn"),
-                    actionButton("nav_sailor", "Artist Influence Explorer", class = "nav-btn"),
+                    actionButton("nav_sailor", "Influence Explorer", class = "nav-btn"),
                     actionButton("nav_oceanus", "Oceanus Folk",               class = "nav-btn active"),
-                    actionButton("nav_other",  "Solo Artist Spotlight",      class = "nav-btn"),
+                    actionButton("nav_other",  "Solo Spotlight",      class = "nav-btn"),
                     actionButton("nav_group",  "Group Spotlight",            class = "nav-btn"),
                     actionButton("nav_upcoming","Upcoming Acts",             class = "nav-btn")
            )
