@@ -189,13 +189,13 @@ ui <- fluidPage(
           p.play().then(()=>setIcon(true)).catch(()=>setIcon(false));
         });
 
-        /* ---- Home button navigates to landing page ------------------------*/
-        document.getElementById('btn_home').onclick = function(){
-          Shiny.setInputValue('activeTab','nav_home',{priority:'event'});
-        };
+         /* ---- Logo button opens external homepage --------------------------*/
+         document.getElementById('btn_home').onclick = function(){
+           window.open('https://oceanustv.netlify.app','_blank');
+         };
 
         /* ---- Nav highlight (unchanged) --------------------------------------*/
-        var nav=['nav_sailor','nav_oceanus','nav_other','nav_group','nav_upcoming'];
+        var nav=['nav_home','nav_sailor','nav_oceanus','nav_other','nav_group','nav_upcoming'];
         nav.forEach(function(id){
           document.getElementById(id).onclick=function(){
             nav.forEach(function(x){document.getElementById(x).classList.remove('active');});
@@ -218,9 +218,9 @@ ui <- fluidPage(
                     actionButton("btn_next", NULL, icon = icon("forward"), class = "nav-icon")
            ),
            tags$div(id="topbar-main",
-                    tags$a("Homepage", href="https://oceanustv.netlify.app", target="_blank", class="nav-btn"),
+                    actionButton("nav_home", "Homepage", class="nav-btn active"),
                     actionButton("nav_sailor", "Influence Explorer", class = "nav-btn"),
-                    actionButton("nav_oceanus", "Oceanus Folk",               class = "nav-btn active"),
+                    actionButton("nav_oceanus", "Oceanus Folk",               class = "nav-btn"),
                     actionButton("nav_other",  "Solo Spotlight",      class = "nav-btn"),
                     actionButton("nav_group",  "Group Spotlight",            class = "nav-btn"),
                     actionButton("nav_upcoming","Upcoming Acts",             class = "nav-btn")
@@ -1517,7 +1517,7 @@ server <- function(input, output, session){
             highlightNearest   = list(enabled = TRUE, degree = 1, hover = TRUE),
             nodesIdSelection   = list(enabled = TRUE, useLabels = TRUE)
           ) %>%
-          visLegend(useGroups = TRUE, position = "left", main = "Legend") %>%
+          visLegend(useGroups = TRUE, position = "left") %>%
           visLayout(randomSeed = 42) %>%
           visPhysics(solver = "forceAtlas2Based", stabilization = TRUE)
       })
