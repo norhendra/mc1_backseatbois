@@ -195,7 +195,7 @@ ui <- fluidPage(
          };
 
         /* ---- Nav highlight (unchanged) --------------------------------------*/
-        var nav=['nav_home','nav_sailor','nav_oceanus','nav_other','nav_group','nav_upcoming'];
+        var nav=['nav_home','nav_sailor','nav_oceanus','nav_other','nav_group','nav_rising'];
         nav.forEach(function(id){
           document.getElementById(id).onclick=function(){
             nav.forEach(function(x){document.getElementById(x).classList.remove('active');});
@@ -221,9 +221,9 @@ ui <- fluidPage(
                     actionButton("nav_home", "Homepage", class="nav-btn active"),
                     actionButton("nav_sailor", "Influence Explorer", class = "nav-btn"),
                     actionButton("nav_oceanus", "Oceanus Folk",               class = "nav-btn"),
-                    actionButton("nav_other",  "Solo Spotlight",      class = "nav-btn"),
+                    actionButton("nav_other",  "Artist Spotlight",      class = "nav-btn"),
                     actionButton("nav_group",  "Group Spotlight",            class = "nav-btn"),
-                    actionButton("nav_upcoming","Upcoming Acts",             class = "nav-btn")
+                    actionButton("nav_rising","Rising Stars",             class = "nav-btn")
            )
   )
   ,
@@ -239,7 +239,7 @@ ui <- fluidPage(
            selectInput(
              inputId = "summary",
              label   = NULL,
-             choices = c("Sailor Shift","Oceanus Folk","Top Artist","Upcoming Acts"),
+             choices = c("Sailor Shift","Oceanus Folk","Top Artist","Rising Stars"),
              selected = "Sailor Shift",
              width    = "100%"
            ),
@@ -314,16 +314,16 @@ server <- function(input, output, session){
                                uiOutput("year_slider_ui"),
            ),
            "nav_other"   = div(id="sidebar-left",
-                               h4("Solo Artist Spotlight"),
+                               h4("Artist Spotlight"),
                                selectInput("other_artist","Choose artist",
                                            choices=c("Orla Seabloom","Beatrice Albright","Daniel O’Connell"))),
            "nav_group"   = div(id="sidebar-left",
                                h4("Group Spotlight"),
                                selectInput("group_spotlight","Choose group",
                                            choices=c("Ivy Echoes","Oceanus Folk Ensemble","Echoes of Oceanus"))),
-           "nav_upcoming"= div(id="sidebar-left",
-                               h4("Upcoming Acts"),
-                               selectInput("upcoming_act","Choose act",
+           "nav_rising"= div(id="sidebar-left",
+                               h4("Rising Stars"),
+                               selectInput("rising_act","Choose act",
                                            choices=c("Rising Tide","New Horizons","Folk Revival")))
     )
   })
@@ -334,7 +334,7 @@ server <- function(input, output, session){
              id="main",
              tags$h2(
                style="text-align:center;",
-               "Step into the vibrant world of Oceanus TV, where musical journeys come alive! Navigate artist influence maps, uncover solo and group spotlights, and get a sneak peek at rising stars. Ready to explore? Check out our ",
+               "Step into the vibrant world of Oceanus TV, where musical journeys come alive! Navigate artist influence maps, uncover artist and group spotlights, and get a sneak peek at rising stars. Ready to explore? Check out our ",
                tags$a("User Guide",
                       href="https://oceanustv.netlify.app/userguide/userguide",
                       target="_blank"),
@@ -360,7 +360,7 @@ server <- function(input, output, session){
            ),
            "nav_other"   = div(id="main", plotOutput("otherPlot",height="400px")),
            "nav_group"   = div(id="main", plotOutput("otherPlot",height="400px")),
-           "nav_upcoming"= div(id="main", plotOutput("otherPlot",height="400px"))
+           "nav_rising"= div(id="main", plotOutput("otherPlot",height="400px"))
     )
   })
   
@@ -1674,7 +1674,7 @@ server <- function(input, output, session){
                    "Sailor Shift"   = "sailorshift.png",
                    "Oceanus Folk"   = "OceanusFolk.png",
                    "Top Artist"     = "topartist.png",
-                   "Upcoming Acts"  = "upcomingact.png"
+                   "Rising Stars"  = "risingact.png"
       ),
       class = "cover-img"
     )
@@ -1686,7 +1686,7 @@ server <- function(input, output, session){
              "Sailor Shift"   = "About Sailor Shift",
              "Oceanus Folk"   = "About the Genre",
              "Top Artist"     = "About Top Artist",
-             "Upcoming Acts"  = "About Upcoming Acts"
+             "Rising Stars"  = "About Rising Stars"
       ),
       style="color:#FFF;margin:16px 0 8px;font-weight:800;"
     )
@@ -1697,7 +1697,7 @@ server <- function(input, output, session){
                 "Sailor Shift"   = "… Sailor description …",
                 "Oceanus Folk"   = "… Oceanus description …",
                 "Top Artist"     = "… Top Artist description …",
-                "Upcoming Acts"  = "… Upcoming Acts description …"
+                "Rising Stars"  = "… Rising Stars description …"
     ))
   })
   
