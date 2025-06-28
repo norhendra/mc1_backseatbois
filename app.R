@@ -17,6 +17,12 @@ library(lubridate)
 library(RColorBrewer)
 library(rlang)
 library(igraph)
+library(gridlayout)
+library(gridExtra)
+library(tibble)
+library(forcats)
+library(stringr)
+library(tidyr)
 
 # ---- paths / filenames -----------------------------------------------------
 cache_rds <- "data/network_tables.rds"
@@ -34,6 +40,27 @@ all_edge_type_colors <- c(
   DirectlySamples="#bab0ac", DistributedBy="#d37295", MemberOf="#8cd17d",
   default="#999999")
 desired_edge_types <- names(all_edge_type_colors)[names(all_edge_type_colors)!="default"]
+
+# ─── Data prep (Andre's code) ───────────────────────────────────────────────────
+kg_raw      <- fromJSON("data/MC1_graph.json")
+nodes_tbl   <- as_tibble(kg_raw$nodes) %>% mutate(idx = row_number())
+links_tbl   <- as_tibble(kg_raw$links)
+
+id_map    <- nodes_tbl %>% select(id, idx)
+edges_idx <- links_tbl %>%
+  left_join(id_map, by = c("source" = "id")) %>% rename(from = idx) %>%
+  left_join(id_map, by = c("target" = "id")) %>% rename(to   = idx) %>%
+  filter(!is.na(from) & !is.na(to))
+
+person_idxs   <- which(nodes_tbl$`Node Type` == "Person")
+genre_choices <- nodes_tbl %>%
+  filter(`Node Type` == "Song") %>%
+  pull(genre) %>% unique() %>% sort()
+
+group_choices <- edges_idx %>%
+  filter(`Edge Type` == "MemberOf") %>%
+  pull(to) %>% unique() %>%
+  { nodes_tbl$name[.] } %>% sort()
 
 # ════════════════════════════════════════════════════════════════════════════
 # 1. LOAD  or  BUILD  NETWORK TABLES
@@ -315,18 +342,25 @@ server <- function(input, output, session){
            ),
            "nav_other"   = div(id="sidebar-left",
                                h4("Artist Spotlight"),
-                               selectInput("other_artist","Choose artist",
-                                           choices=c("Orla Seabloom","Beatrice Albright","Daniel O’Connell"))),
+                               uiOutput("settings_ui")
+           ),
            "nav_group"   = div(id="sidebar-left",
                                h4("Group Spotlight"),
-                               selectInput("group_spotlight","Choose group",
-                                           choices=c("Ivy Echoes","Oceanus Folk Ensemble","Echoes of Oceanus"))),
+                               uiOutput("dist_settings_ui")
+           ),
            "nav_rising"= div(id="sidebar-left",
-                               h4("Rising Stars"),
-                               selectInput("rising_act","Choose act",
-                                           choices=c("Rising Tide","New Horizons","Folk Revival")))
+                             h4("Rising Stars"),
+                             selectInput(
+                               "star_genre", "Select Genre for Emerging Artists:",
+                               choices  = genre_choices,
+                               selected = "Oceanus Folk",
+                               width    = "100%"
+                             )
+           )
     )
   })
+
+  # MAIN PANEL  
   
   output$main_panel <- renderUI({
     switch(activeTab(),
@@ -349,20 +383,399 @@ server <- function(input, output, session){
            "nav_oceanus" = div(id="main",
                                conditionalPanel(
                                  condition = "input.influence_direction == 'Outward'",
-                                 plotlyOutput("timelinePlot", height = "400px"),
+                                 plotlyOutput("timelinePlot", width="100%", height = "400px"),
                                  visNetworkOutput("expandedNet", height = "500px")
                                ),
                                conditionalPanel(
                                  condition = "input.influence_direction == 'Inward'",
-                                 plotlyOutput("inwardTimelinePlot", height = "400px"),
+                                 plotlyOutput("inwardTimelinePlot", width="100%", height = "400px"),
                                  visNetworkOutput("genreBandNet", height = "500px")
                                )
            ),
-           "nav_other"   = div(id="main", plotOutput("otherPlot",height="400px")),
-           "nav_group"   = div(id="main", plotOutput("otherPlot",height="400px")),
-           "nav_rising"= div(id="main", plotOutput("otherPlot",height="400px"))
+           "nav_other"   = div(id="main",
+                               plotOutput("linePlots", height = "600px")
+           ),
+           "nav_group"   = div(id="main",
+                               plotOutput("distPlots", height = "600px")
+           ),
+           "nav_rising"= div(id="main",
+                             plotlyOutput("risingPlot", width = "100%", height = "600px")
+           )
     )
   })
+ 
+  # ─────────────────────────────────────────────────
+  # 1. Artist Spotlight pagination & UI logic
+  
+  currentPage <- reactiveVal(1)
+  observeEvent(input$nextPage, { currentPage(if(currentPage()==1) 2 else 1) })
+  observeEvent(input$prevPage, { currentPage(if(currentPage()==1) 2 else 1) })
+  
+  output$settings_ui <- renderUI({
+    if (currentPage()==1) {
+      tagList(
+        selectInput(
+          "genre_selector","Select Genres:",
+          choices  = genre_choices,
+          selected = genre_choices[2:3],
+          multiple = TRUE, width="100%"
+        ),
+        selectInput(
+          "top_n_selector","Top N Artists in Genre:",
+          choices  = as.character(1:10),
+          selected = "5", width="100%"
+        ),
+        fluidRow(
+          column(6, actionButton("prevPage","← Previous", width="100%")),
+          column(6, actionButton("nextPage","Next →",    width="100%"))
+        )
+      )
+    } else {
+      req(input$genre_selector)
+      top_artists <- edges_idx %>%
+        filter(`Edge Type` %in% c("ComposerOf","PerformerOf"),
+               from %in% person_idxs) %>%
+        inner_join(
+          nodes_tbl %>% filter(`Node Type`=="Song",
+                               genre %in% input$genre_selector,
+                               notable) %>% select(idx,genre),
+          by=c("to"="idx")
+        ) %>%
+        mutate(Person=nodes_tbl$name[from]) %>%
+        count(genre,Person,name="NotableSongs") %>%
+        group_by(genre) %>%
+        slice_max(NotableSongs,n=10,with_ties=FALSE) %>%
+        ungroup() %>%
+        pull(Person) %>% unique() %>% sort()
+      
+      tagList(
+        selectInput(
+          "person_selector","Select Artist(s):",
+          choices  = top_artists,
+          selected = head(top_artists,3),
+          multiple = TRUE, width="100%"
+        ),
+        fluidRow(
+          column(6, actionButton("prevPage","← Previous", width="100%")),
+          column(6, actionButton("nextPage","Next →",    width="100%"))
+        )
+      )
+    }
+  })
+  
+  # Render A–E  
+  output$linePlots <- renderPlot({
+    req(input$genre_selector)
+    top_n <- as.numeric(input$top_n_selector)
+    selected_persons <- input$person_selector
+    
+    genre_songs <- nodes_tbl %>%
+      filter(`Node Type`=="Song", genre %in% input$genre_selector) %>%
+      select(idx,genre,notable)
+    notable_edges <- edges_idx %>%
+      filter(`Edge Type`%in%c("ComposerOf","PerformerOf"),
+             from%in%person_idxs) %>%
+      inner_join(genre_songs, by=c("to"="idx")) %>%
+      mutate(Person=nodes_tbl$name[from])
+    
+    if (currentPage()==1) {
+      # Plot B
+      dfB <- genre_songs %>%
+        group_by(genre,notable) %>%
+        summarise(SongCount=n(),.groups="drop") %>%
+        mutate(Status=ifelse(notable,"Notable","Non-notable"))
+      pB <- ggplot(dfB,aes(
+        x=fct_reorder(genre,SongCount,.fun=sum,.desc=TRUE),
+        y=SongCount, fill=Status
+      ))+
+        geom_col()+coord_flip()+
+        labs(title="Song Counts by Notability per Genre",
+             x="Genre",y="Number of Songs",fill="")+
+        theme_minimal(base_size=12)
+      # Plot A
+      dfA <- notable_edges %>%
+        filter(notable) %>%
+        count(genre,Person,name="NotableSongs") %>%
+        group_by(genre) %>%
+        slice_max(NotableSongs,n=top_n,with_ties=FALSE) %>%
+        ungroup()
+      pA <- ggplot(dfA,aes(
+        x=fct_reorder(Person,NotableSongs),y=NotableSongs
+      ))+
+        geom_col(fill="darkgreen")+coord_flip()+
+        facet_wrap(~genre,scales="free_y",ncol=2)+
+        labs(title=paste0("Top ",top_n," Artists by Notable Songs"),
+             x=NULL,y="Count of Notable Songs")+
+        theme_minimal(base_size=12)+
+        theme(strip.text=element_text(face="bold"))
+      grid.arrange(pB,pA,ncol=2)
+      
+    } else {
+      # Plot C
+      dfC <- notable_edges %>%
+        filter(notable,Person%in%selected_persons) %>%
+        count(Person,name="NotableSongs")
+      pC <- ggplot(dfC,aes(
+        x=fct_reorder(Person,NotableSongs),y=NotableSongs
+      ))+
+        geom_col(fill="pink")+coord_flip()+
+        labs(title="Notable Songs by Selected Artist(s)",
+             x=NULL,y="Count of Notable Songs")+
+        theme_minimal(base_size=12)
+      # Plot D
+      dfD <- edges_idx %>%
+        filter(`Edge Type`%in%c("ComposerOf","PerformerOf"),
+               from%in%nodes_tbl$idx[nodes_tbl$name%in%selected_persons]) %>%
+        left_join(nodes_tbl%>%select(idx,notable,release_date,notoriety_date),
+                  by=c("to"="idx")) %>%
+        mutate(
+          Person=nodes_tbl$name[from],
+          release_year=as.integer(str_extract(release_date,"\\d{4}")),
+          notoriety_year=as.integer(str_extract(notoriety_date,"\\d{4}"))
+        )
+      ny <- dfD %>%
+        filter(notable,!is.na(release_year)) %>%
+        count(Person,Year=release_year,name="Notable")
+      cy <- dfD %>%
+        filter(!is.na(notoriety_year)) %>%
+        count(Person,Year=notoriety_year,name="Charted")
+      comb <- full_join(ny,cy,by=c("Person","Year")) %>%
+        replace_na(list(Notable=0,Charted=0)) %>%
+        arrange(Person,Year)
+      pD <- ggplot(comb,aes(x=Year))+
+        geom_col(aes(y=Notable,fill="Notable"),alpha=0.5,width=0.8)+
+        geom_line(aes(y=Charted,color="Charted",group=Person),size=1)+
+        geom_point(aes(y=Charted,color="Charted"),size=2)+
+        facet_wrap(~Person,scales="free_y")+
+        scale_fill_manual(NULL,values=c(Notable="#1f78b4"))+
+        scale_color_manual(NULL,values=c(Charted="#e31a1c"))+
+        labs(title="Notable vs. Charted Songs by Year",x="Year",y="Song Count")+
+        theme_minimal(base_size=12)
+      # Plot E
+      pies <- lapply(selected_persons,function(person){
+        idx <- which(nodes_tbl$name==person)
+        tbl <- edges_idx %>%
+          filter(`Edge Type`%in%c("ComposerOf","PerformerOf"),from==idx) %>%
+          left_join(nodes_tbl%>%filter(`Node Type`=="Song")%>%select(idx,notable),
+                    by=c("to"="idx")) %>%
+          mutate(Notable=ifelse(notable,"Yes","No")) %>%
+          count(Notable)%>%arrange(Notable)%>%
+          mutate(
+            percentage=round(n/sum(n)*100,1),
+            label=paste0(Notable,"\n",n," (",percentage,"% )")
+          )
+        ggplot(tbl,aes(x="",y=n,fill=Notable))+
+          geom_col(width=1)+coord_polar("y",start=0)+
+          scale_fill_manual(values=c(Yes="#33a02c",No="#ff7f00"))+
+          geom_text(aes(label=label),position=position_stack(vjust=0.5),size=3)+
+          labs(title=person,x=NULL,y=NULL)+theme_void()+
+          theme(plot.title=element_text(size=10))
+      })
+      pE <- arrangeGrob(grobs=pies,ncol=length(pies))
+      grid.arrange(grobs=list(pC,pD,pE),layout_matrix=rbind(c(1,2),c(3,2)))
+    }
+  })
+  
+  # ─────────────────────────────────────────────────
+  # 2. Group Spotlight pagination & UI logic
+  
+  distPage <- reactiveVal(1)
+  observeEvent(input$nextDistPage, { distPage(if(distPage()==1) 2 else 1) })
+  observeEvent(input$prevDistPage, { distPage(if(distPage()==1) 2 else 1) })
+  
+  output$dist_settings_ui <- renderUI({
+    if (distPage()==1) {
+      tagList(
+        selectInput(
+          "dist_genre_selector","Select Genres:",
+          choices=genre_choices,
+          selected=genre_choices[2:3],
+          multiple=TRUE, width="100%"
+        ),
+        selectInput(
+          "dist_top_n","Top N (artists or groups):",
+          choices=as.character(1:10),
+          selected="5", width="100%"
+        ),
+        fluidRow(
+          column(6, actionButton("prevDistPage","← Previous",width="100%")),
+          column(6, actionButton("nextDistPage","Next →",   width="100%"))
+        )
+      )
+    } else {
+      tagList(
+        selectInput(
+          "dist_group_selector","Select Musical Group:",
+          choices=group_choices,
+          selected=group_choices[1],
+          multiple=FALSE, width="100%"
+        ),
+        fluidRow(
+          column(6, actionButton("prevDistPage","← Previous",width="100%")),
+          column(6, actionButton("nextDistPage","Next →",   width="100%"))
+        )
+      )
+    }
+  })
+
+  # Group Spotlight plots
+    
+  output$distPlots <- renderPlot({
+    req(input$dist_genre_selector)
+    top_n <- as.numeric(input$dist_top_n)
+    
+    if (distPage()==1) {
+      # Plot B
+      dfB <- nodes_tbl %>%
+        filter(`Node Type`=="Song",genre%in%input$dist_genre_selector) %>%
+        select(idx,genre,notable) %>%
+        group_by(genre,notable) %>%
+        summarise(SongCount=n(),.groups="drop") %>%
+        mutate(Status=ifelse(notable,"Notable","Non-notable"))
+      pB <- ggplot(dfB,aes(
+        x=fct_reorder(genre,SongCount,.fun=sum,.desc=TRUE),
+        y=SongCount,fill=Status
+      ))+geom_col()+coord_flip()+
+        labs(title="Song Counts by Notability per Genre",
+             x="Genre",y="Number of Songs",fill="")+
+        theme_minimal(base_size=12)
+      
+      # Plot F
+      sg <- edges_idx %>%
+        filter(`Edge Type`%in%c("ComposerOf","PerformerOf")) %>%
+        inner_join(
+          nodes_tbl%>%filter(`Node Type`=="Song",
+                             genre%in%input$dist_genre_selector)%>%
+            select(idx,genre,notable),
+          by=c("to"="idx")
+        ) %>%
+        filter(notable) %>%
+        inner_join(
+          edges_idx%>%filter(`Edge Type`=="MemberOf"),
+          by="from",suffix=c(".song",".group")
+        ) %>%
+        mutate(Group=nodes_tbl$name[to.group])
+      dfF <- sg %>%
+        count(genre,Group,name="GroupSongs") %>%
+        group_by(genre) %>%
+        slice_max(GroupSongs,n=top_n,with_ties=FALSE) %>%
+        ungroup()
+      pF <- ggplot(dfF,aes(
+        x=fct_reorder(Group,GroupSongs),y=GroupSongs
+      ))+geom_col(fill="steelblue")+coord_flip()+
+        facet_wrap(~genre,scales="free_y",ncol=2)+
+        labs(title=paste0("Top ",top_n,
+                          " Musical Groups by Notable Songs"),
+             x=NULL,y="Count of Notable Songs")+
+        theme_minimal(base_size=12)+theme(strip.text=element_text(face="bold"))
+      grid.arrange(pB,pF,ncol=2)
+      
+    } else {
+      # Plot G
+      ivy_id_map <- nodes_tbl%>%mutate(ivy_row=row_number())%>%select(id,ivy_row)
+      ivy_edges  <- links_tbl%>%
+        left_join(ivy_id_map,by=c("source"="id"))%>%rename(from=ivy_row)%>%
+        left_join(ivy_id_map,by=c("target"="id"))%>%rename(to=ivy_row)%>%
+        filter(!is.na(from)&!is.na(to))
+      band_idx    <- which(nodes_tbl$name==input$dist_group_selector)
+      member_idxs <- ivy_edges%>%
+        filter(`Edge Type`=="MemberOf",to==band_idx)%>%pull(from)
+      member_names<-nodes_tbl$name[member_idxs]
+      release_edges<-ivy_edges%>%
+        filter(`Edge Type`%in%c("ComposerOf","PerformerOf","LyricistOf",
+                                "RecordedBy","ProducerOf","DistributedBy"),
+               from%in%member_idxs)
+      release_data<-release_edges%>%
+        mutate(Artist=nodes_tbl$name[from],
+               Year=as.integer(nodes_tbl$release_date[to]))%>%
+        filter(!is.na(Year))
+      raw_counts <- release_data%>%count(Artist,Year)
+      year_span  <- seq(min(raw_counts$Year),max(raw_counts$Year))
+      timeline_tbl<-raw_counts%>%
+        complete(Artist=member_names,Year=year_span,fill=list(n=0))
+      ggplot(timeline_tbl%>%mutate(Year_f=factor(Year)),
+             aes(x=Year_f,y=n,color=Artist,group=Artist))+
+        geom_line(position=position_dodge(width=0.5),size=1)+
+        geom_point(position=position_dodge(width=0.5),size=3)+
+        scale_x_discrete(drop=FALSE)+
+        labs(title=paste0("Annual Output by ",
+                          input$dist_group_selector,
+                          " Members (Dodged)"),
+             x="Year",y="Number of Works",color="Artist")+
+        theme_minimal(base_size=12)+
+        theme(axis.text.x=element_text(angle=45,hjust=1))
+    }
+  })
+  
+  # ─────────────────────────────────────────────────
+  # 3. Rising Stars: Plot H
+  
+  output$risingPlot <- renderPlotly({
+    req(input$star_genre)
+    
+    ivy_id_map <- nodes_tbl%>%mutate(ivy_row=row_number())%>%select(id,ivy_row)
+    ivy_edges  <- links_tbl%>%
+      left_join(ivy_id_map,by=c("source"="id"))%>%rename(from=ivy_row)%>%
+      left_join(ivy_id_map,by=c("target"="id"))%>%rename(to=ivy_row)%>%
+      filter(!is.na(from)&!is.na(to))
+    songs_full<-nodes_tbl%>%
+      filter(`Node Type`=="Song",genre==input$star_genre)%>%
+      mutate(
+        release_year=suppressWarnings(as.integer(str_extract(release_date,"\\d{4}"))),
+        written_year=suppressWarnings(as.integer(str_extract(written_date,"\\d{4}"))),
+        song_year   =pmin(release_year,written_year,na.rm=TRUE),
+        is_notable  =!is.na(notoriety_date)
+      )%>%
+      filter(!is.na(song_year))%>%
+      select(song_idx=idx,song_year,is_notable)
+    pe<-ivy_edges%>%
+      filter(
+        `Edge Type`%in%c("ComposerOf","PerformerOf"),
+        from%in%person_idxs,to%in%songs_full$song_idx
+      )%>%
+      select(person_idx=from,song_idx=to)
+    p_first<-pe%>%
+      left_join(songs_full,by="song_idx")%>%
+      group_by(person_idx)%>%
+      summarise(first_year=min(song_year,na.rm=TRUE),.groups="drop")%>%
+      filter(first_year>=2025,first_year<=2035)%>%
+      left_join(nodes_tbl%>%select(person_idx=idx,PersonName=name),by="person_idx")
+    ans<-ivy_edges%>%
+      filter(
+        `Edge Type`%in%c("ComposerOf","PerformerOf"),
+        from%in%p_first$person_idx,to%in%songs_full$song_idx
+      )%>%
+      left_join(songs_full,by=c("to"="song_idx"))%>%
+      left_join(p_first,by=c("from"="person_idx"))%>%
+      filter(is_notable,song_year>=2025,song_year<=2035)%>%
+      select(PersonName,year=song_year)
+    counts<-ans%>%count(PersonName,year,name="NotableCount")
+    all_grid<-expand_grid(PersonName=unique(p_first$PersonName),year=2025:2035)
+    trends<-all_grid%>%left_join(counts,by=c("PersonName","year"))%>%
+      replace_na(list(NotableCount=0))
+    static_gg<-ggplot(trends,
+                      aes(x=year,y=NotableCount,color=PersonName,group=PersonName))+
+      geom_line(position=position_dodge(width=1.5),size=1)+
+      geom_point(position=position_dodge(width=1.5),size=2)+
+      scale_x_continuous(breaks=seq(2025,2035,2))+
+      labs(
+        title=paste0("Notable ",input$star_genre,
+                     " Songs by Emerging Artists (2025–2035)"),
+        subtitle="Click legend to isolate",
+        x="Year",y="Number of Notable Songs",color="Artist"
+      )+
+      theme_minimal(base_size=10)+
+      theme(
+        legend.text=element_text(size=8),
+        legend.title=element_text(size=9),
+        plot.title=element_text(size=12,face="bold"),
+        plot.subtitle=element_text(size=10),
+        axis.text.x=element_text(angle=45,hjust=1)
+      )
+    ggplotly(static_gg,tooltip=c("x","y","colour"))%>%
+      layout(legend=list(itemclick="toggleothers",itemdoubleclick="toggle"))
+  })
+  
   
   # -------------For Influence Network------------------  
   observe({
