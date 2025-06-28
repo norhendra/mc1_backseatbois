@@ -62,89 +62,7 @@ group_choices <- edges_idx %>%
   pull(to) %>% unique() %>%
   { nodes_tbl$name[.] } %>% sort()
 
-# ════════════════════════════════════════════════════════════════════════════
-# 1. LOAD  or  BUILD  NETWORK TABLES
-# ════════════════════════════════════════════════════════════════════════════
-# required_objs <- c(
-#   "nodes_inward_vis","edges_inward_final",
-#   "nodes_outward_vis","edges_outward_final",
-#   "nodes_all_vis","edges_all_final")
-# 
-# if (file.exists(cache_rds)) {
-#   list2env(readRDS(cache_rds), .GlobalEnv)
-# } else {
-#   if (!file.exists(json_path))
-#     stop("Cannot find ", json_path, ". Please place MC1_graph.json in /data")
-#   
-#   kg <- fromJSON(json_path)
-#   
-#   nodes_tbl <- as_tibble(kg$nodes) %>%
-#     mutate(
-#       id   = tolower(trimws(as.character(id))),
-#       name = trimws(name),
-#       release_date_parsed = suppressWarnings(parse_date_time(
-#         release_date, orders=c("ymd","Ymd","Y-m-d","Y/m/d","Y"))),
-#       release_year = coalesce(year(release_date_parsed),
-#                               suppressWarnings(as.integer(str_extract(release_date,"\\d{4}")))),
-#       `Node Type` = trimws(coalesce(`Node Type`, "Unknown"))
-#     ) %>%
-#     distinct(id,.keep_all=TRUE)
-#   
-#   for (col in c("stage_name","genre","notable")) {
-#     if (!col %in% names(nodes_tbl))
-#       nodes_tbl[[col]] <- NA
-#   }
-#   
-#   edges_tbl <- as_tibble(kg$links) %>%
-#     rename(from=source,to=target) %>%
-#     mutate(across(c(from,to),~tolower(trimws(as.character(.))))) %>%
-#     filter(`Edge Type` %in% desired_edge_types)
-#   
-#   sailor_id <- nodes_tbl %>% filter(tolower(name)=="sailor shift") %>% pull(id) %>% first()
-#   stopifnot(!is.na(sailor_id))
-#   
-#   inward_ids <- unique(c(
-#     sailor_id,
-#     edges_tbl %>% filter(to==sailor_id) %>% pull(from),
-#     edges_tbl %>% filter(to %in% (edges_tbl %>% filter(to==sailor_id) %>% pull(from))) %>% pull(from)
-#   ))
-#   outward_ids <- unique(c(
-#     sailor_id,
-#     edges_tbl %>% filter(from==sailor_id) %>% pull(to),
-#     edges_tbl %>% filter(from %in% (edges_tbl %>% filter(from==sailor_id) %>% pull(to))) %>% pull(to)
-#   ))
-#   
-#   make_nodes <- function(ids){
-#     nodes_tbl %>%
-#       filter(id %in% ids) %>%
-#       mutate(
-#         label            = name,
-#         group            = `Node Type`,
-#         color.background = coalesce(all_node_type_colors[`Node Type`],
-#                                     all_node_type_colors["Unknown"]),
-#         size             = ifelse(id==sailor_id,60,25)
-#       )
-#   }
-#   make_edges <- function(ids){
-#     edges_tbl %>%
-#       filter(from %in% ids & to %in% ids) %>%
-#       mutate(label=`Edge Type`, title=`Edge Type`, arrows="to",
-#              color=all_edge_type_colors[`Edge Type`])
-#   }
-#   
-#   nodes_inward_vis   <- make_nodes(inward_ids)
-#   edges_inward_final <- make_edges(inward_ids)
-#   nodes_outward_vis  <- make_nodes(outward_ids)
-#   edges_outward_final<- make_edges(outward_ids)
-#   nodes_all_vis      <- bind_rows(nodes_inward_vis,nodes_outward_vis) %>% distinct(id,.keep_all=TRUE)
-#   edges_all_final    <- bind_rows(edges_inward_final,edges_outward_final) %>% distinct(from,to,label,.keep_all=TRUE)
-#   
-#   saveRDS(list(
-#     nodes_inward_vis=nodes_inward_vis,   edges_inward_final=edges_inward_final,
-#     nodes_outward_vis=nodes_outward_vis, edges_outward_final=edges_outward_final,
-#     nodes_all_vis=nodes_all_vis,         edges_all_final=edges_all_final),
-#     cache_rds)
-# }
+
 
 # ════════════════════════════════════════════════════════════════════════════
 # 2. UI
@@ -376,7 +294,7 @@ server <- function(input, output, session){
              )
            ),
            "nav_sailor"  = div(id="main",
-                               plotOutput("degree_bar", height = "300px"),
+                               plotOutput("degree_bar", height = "200px"),
                                visNetworkOutput("network", height = "700px"),
                                uiOutput("legend_panel")
            ),
