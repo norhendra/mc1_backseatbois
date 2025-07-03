@@ -332,20 +332,20 @@ server <- function(input, output, session){
   output$settings_ui <- renderUI({
     if (currentPage()==1) {
       tagList(
-        selectInput(
+        pickerInput(
           "genre_selector","Select Genres:",
           choices  = genre_choices,
           selected = genre_choices[2:3],
           multiple = TRUE, width="100%"
         ),
-        selectInput(
+        pickerInput(
           "top_n_selector","Top N Artists in Genre:",
           choices  = as.character(1:10),
           selected = "5", width="100%"
         ),
         fluidRow(
-          column(6, actionButton("prevPage","← Previous", width="100%")),
-          column(6, actionButton("nextPage","Next →",    width="100%"))
+          column(6, actionButton("prevPage","Prev Page ←", width="100%", style = "color: white; background-color: green;")),
+          column(6, actionButton("nextPage","Next Page →", width="100%", style = "color: white; background-color: green;"))
         )
       )
     } else {
@@ -367,15 +367,15 @@ server <- function(input, output, session){
         pull(Person) %>% unique() %>% sort()
       
       tagList(
-        selectInput(
+        pickerInput(
           "person_selector","Select Artist(s):",
           choices  = top_artists,
           selected = head(top_artists,3),
           multiple = TRUE, width="100%"
         ),
         fluidRow(
-          column(6, actionButton("prevPage","← Previous", width="100%")),
-          column(6, actionButton("nextPage","Next →",    width="100%"))
+          column(6, actionButton("prevPage","Prev Page ←", width="100%", style = "color: white; background-color: green;")),
+          column(6, actionButton("nextPage","Next Page →",  width="100%", style = "color: white; background-color: green;"))
         )
       )
     }
@@ -426,7 +426,7 @@ server <- function(input, output, session){
              x=NULL,y="Count of Notable Songs")+
         theme_minimal(base_size=12)+
         theme(strip.text=element_text(face="bold"))
-      grid.arrange(pB,pA,ncol=2)
+      grid.arrange(pB,pA,ncol=1)
       
     } else {
       # Plot C
@@ -490,7 +490,7 @@ server <- function(input, output, session){
           theme(plot.title=element_text(size=10))
       })
       pE <- arrangeGrob(grobs=pies,ncol=length(pies))
-      grid.arrange(grobs=list(pC,pD,pE),layout_matrix=rbind(c(1,2),c(3,2)))
+      grid.arrange(grobs=list(pC,pD,pE),layout_matrix=rbind(c(2,2),c(1,3)))
     }
   })
   
@@ -504,33 +504,33 @@ server <- function(input, output, session){
   output$dist_settings_ui <- renderUI({
     if (distPage()==1) {
       tagList(
-        selectInput(
+        pickerInput(
           "dist_genre_selector","Select Genres:",
           choices=genre_choices,
           selected=genre_choices[2:3],
           multiple=TRUE, width="100%"
         ),
-        selectInput(
+        pickerInput(
           "dist_top_n","Top N (artists or groups):",
           choices=as.character(1:10),
           selected="5", width="100%"
         ),
         fluidRow(
-          column(6, actionButton("prevDistPage","← Previous",width="100%")),
-          column(6, actionButton("nextDistPage","Next →",   width="100%"))
+          column(6, actionButton("prevDistPage","Prev Page ←",width="100%", style = "color: white; background-color: green;")),
+          column(6, actionButton("nextDistPage","Next Page →",  width="100%", style = "color: white; background-color: green;"))
         )
       )
     } else {
       tagList(
-        selectInput(
+        pickerInput(
           "dist_group_selector","Select Musical Group:",
           choices=group_choices,
           selected=group_choices[1],
           multiple=FALSE, width="100%"
         ),
         fluidRow(
-          column(6, actionButton("prevDistPage","← Previous",width="100%")),
-          column(6, actionButton("nextDistPage","Next →",   width="100%"))
+          column(6, actionButton("prevDistPage","Prev Page ←",width="100%", style = "color: white; background-color: green;")),
+          column(6, actionButton("nextDistPage","Next Page →",  width="100%", style = "color: white; background-color: green;"))
         )
       )
     }
@@ -586,7 +586,7 @@ server <- function(input, output, session){
                           " Musical Groups by Notable Songs"),
              x=NULL,y="Count of Notable Songs")+
         theme_minimal(base_size=12)+theme(strip.text=element_text(face="bold"))
-      grid.arrange(pB,pF,ncol=2)
+      grid.arrange(pB,pF,ncol=1)
       
     } else {
       # Plot G
