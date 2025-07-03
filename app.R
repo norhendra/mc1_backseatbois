@@ -949,13 +949,14 @@ server <- function(input, output, session){
           mutate(
             label = name,
             title = paste0(
+              "<span style='color: green;'>", # Add this opening span tag
               "<b>Name:</b> ", name, "<br>",
-              "<b>Node Type:</b> ", `Node Type`, "<br>",
               get_html_detail(stage_name, "Stage Name"),
+              get_html_detail(`Node Type`, "Type"),
               get_html_detail(release_date, "Release Date"),
-              get_html_detail(genre, "Genre (Node)"),
-              get_html_detail(inferred_genre, "Genre (Inferred)"),
-              get_html_detail(notable, "Notable")
+              get_html_detail(genre, "Genre"),
+              get_html_detail(notable, "Notable"),
+              "</span>" # Add this closing span tag
             ),
             group = `Node Type`,
             shape = case_when(
@@ -997,7 +998,7 @@ server <- function(input, output, session){
         degree_df_in$degree_scaled <- rescale(degree_df_in$degree)
         nodes_inward_vis <- nodes_inward_vis %>%
           left_join(degree_df_in, by = "id") %>%
-          mutate(size = ifelse(id == sailor_id, 60, degree_scaled))
+          mutate(size = degree_scaled)
         
         # Outward nodes/edges
         nodes_outward_vis <- nodes_tbl_cleaned %>%
@@ -1007,13 +1008,14 @@ server <- function(input, output, session){
           mutate(
             label = name,
             title = paste0(
+              "<span style='color: green;'>", # Add this opening span tag
               "<b>Name:</b> ", name, "<br>",
-              "<b>Node Type:</b> ", `Node Type`, "<br>",
               get_html_detail(stage_name, "Stage Name"),
+              get_html_detail(`Node Type`, "Type"),
               get_html_detail(release_date, "Release Date"),
-              get_html_detail(genre, "Genre (Node)"),
-              get_html_detail(inferred_genre, "Genre (Inferred)"),
-              get_html_detail(notable, "Notable")
+              get_html_detail(genre, "Genre"),
+              get_html_detail(notable, "Notable"),
+              "</span>" # Add this closing span tag
             ),
             group = `Node Type`,
             shape = case_when(
@@ -1055,7 +1057,7 @@ server <- function(input, output, session){
         degree_df_out$degree_scaled <- rescale(degree_df_out$degree)
         nodes_outward_vis <- nodes_outward_vis %>%
           left_join(degree_df_out, by = "id") %>%
-          mutate(size = ifelse(id == sailor_id, 60, degree_scaled))
+          mutate(size = degree_scaled)
         
         # All
         nodes_all_vis <- bind_rows(nodes_inward_vis, nodes_outward_vis) %>%
