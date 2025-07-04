@@ -277,7 +277,7 @@ server <- function(input, output, session){
            )
     )
   })
-
+  
   # MAIN PANEL  
   
   output$main_panel <- renderUI({
@@ -321,7 +321,7 @@ server <- function(input, output, session){
            )
     )
   })
- 
+  
   # ─────────────────────────────────────────────────
   # 1. Artist Spotlight pagination & UI logic
   
@@ -332,20 +332,20 @@ server <- function(input, output, session){
   output$settings_ui <- renderUI({
     if (currentPage()==1) {
       tagList(
-        selectInput(
+        pickerInput(
           "genre_selector","Select Genres:",
           choices  = genre_choices,
           selected = genre_choices[2:3],
           multiple = TRUE, width="100%"
         ),
-        selectInput(
+        pickerInput(
           "top_n_selector","Top N Artists in Genre:",
           choices  = as.character(1:10),
           selected = "5", width="100%"
         ),
         fluidRow(
-          column(6, actionButton("prevPage","← Previous", width="100%")),
-          column(6, actionButton("nextPage","Next →",    width="100%"))
+          column(6, actionButton("prevPage","Prev Page ←", width="100%", style = "color: white; background-color: green;")),
+          column(6, actionButton("nextPage","Next Page →", width="100%", style = "color: white; background-color: green;"))
         )
       )
     } else {
@@ -367,15 +367,15 @@ server <- function(input, output, session){
         pull(Person) %>% unique() %>% sort()
       
       tagList(
-        selectInput(
+        pickerInput(
           "person_selector","Select Artist(s):",
           choices  = top_artists,
           selected = head(top_artists,3),
           multiple = TRUE, width="100%"
         ),
         fluidRow(
-          column(6, actionButton("prevPage","← Previous", width="100%")),
-          column(6, actionButton("nextPage","Next →",    width="100%"))
+          column(6, actionButton("prevPage","Prev Page ←", width="100%", style = "color: white; background-color: green;")),
+          column(6, actionButton("nextPage","Next Page →",  width="100%", style = "color: white; background-color: green;"))
         )
       )
     }
@@ -426,7 +426,7 @@ server <- function(input, output, session){
              x=NULL,y="Count of Notable Songs")+
         theme_minimal(base_size=12)+
         theme(strip.text=element_text(face="bold"))
-      grid.arrange(pB,pA,ncol=2)
+      grid.arrange(pB,pA,ncol=1)
       
     } else {
       # Plot C
@@ -490,7 +490,7 @@ server <- function(input, output, session){
           theme(plot.title=element_text(size=10))
       })
       pE <- arrangeGrob(grobs=pies,ncol=length(pies))
-      grid.arrange(grobs=list(pC,pD,pE),layout_matrix=rbind(c(1,2),c(3,2)))
+      grid.arrange(grobs=list(pC,pD,pE),layout_matrix=rbind(c(2,2),c(1,3)))
     }
   })
   
@@ -504,40 +504,40 @@ server <- function(input, output, session){
   output$dist_settings_ui <- renderUI({
     if (distPage()==1) {
       tagList(
-        selectInput(
+        pickerInput(
           "dist_genre_selector","Select Genres:",
           choices=genre_choices,
           selected=genre_choices[2:3],
           multiple=TRUE, width="100%"
         ),
-        selectInput(
+        pickerInput(
           "dist_top_n","Top N (artists or groups):",
           choices=as.character(1:10),
           selected="5", width="100%"
         ),
         fluidRow(
-          column(6, actionButton("prevDistPage","← Previous",width="100%")),
-          column(6, actionButton("nextDistPage","Next →",   width="100%"))
+          column(6, actionButton("prevDistPage","Prev Page ←",width="100%", style = "color: white; background-color: green;")),
+          column(6, actionButton("nextDistPage","Next Page →",  width="100%", style = "color: white; background-color: green;"))
         )
       )
     } else {
       tagList(
-        selectInput(
+        pickerInput(
           "dist_group_selector","Select Musical Group:",
           choices=group_choices,
           selected=group_choices[1],
           multiple=FALSE, width="100%"
         ),
         fluidRow(
-          column(6, actionButton("prevDistPage","← Previous",width="100%")),
-          column(6, actionButton("nextDistPage","Next →",   width="100%"))
+          column(6, actionButton("prevDistPage","Prev Page ←",width="100%", style = "color: white; background-color: green;")),
+          column(6, actionButton("nextDistPage","Next Page →",  width="100%", style = "color: white; background-color: green;"))
         )
       )
     }
   })
-
+  
   # Group Spotlight plots
-    
+  
   output$distPlots <- renderPlot({
     req(input$dist_genre_selector)
     top_n <- as.numeric(input$dist_top_n)
@@ -586,7 +586,7 @@ server <- function(input, output, session){
                           " Musical Groups by Notable Songs"),
              x=NULL,y="Count of Notable Songs")+
         theme_minimal(base_size=12)+theme(strip.text=element_text(face="bold"))
-      grid.arrange(pB,pF,ncol=2)
+      grid.arrange(pB,pF,ncol=1)
       
     } else {
       # Plot G
@@ -949,13 +949,14 @@ server <- function(input, output, session){
           mutate(
             label = name,
             title = paste0(
+              "<span style='color: green;'>", # Add this opening span tag
               "<b>Name:</b> ", name, "<br>",
-              "<b>Node Type:</b> ", `Node Type`, "<br>",
               get_html_detail(stage_name, "Stage Name"),
+              get_html_detail(`Node Type`, "Type"),
               get_html_detail(release_date, "Release Date"),
-              get_html_detail(genre, "Genre (Node)"),
-              get_html_detail(inferred_genre, "Genre (Inferred)"),
-              get_html_detail(notable, "Notable")
+              get_html_detail(genre, "Genre"),
+              get_html_detail(notable, "Notable"),
+              "</span>" # Add this closing span tag
             ),
             group = `Node Type`,
             shape = case_when(
@@ -997,7 +998,7 @@ server <- function(input, output, session){
         degree_df_in$degree_scaled <- rescale(degree_df_in$degree)
         nodes_inward_vis <- nodes_inward_vis %>%
           left_join(degree_df_in, by = "id") %>%
-          mutate(size = ifelse(id == sailor_id, 60, degree_scaled))
+          mutate(size = degree_scaled)
         
         # Outward nodes/edges
         nodes_outward_vis <- nodes_tbl_cleaned %>%
@@ -1007,13 +1008,14 @@ server <- function(input, output, session){
           mutate(
             label = name,
             title = paste0(
+              "<span style='color: green;'>", # Add this opening span tag
               "<b>Name:</b> ", name, "<br>",
-              "<b>Node Type:</b> ", `Node Type`, "<br>",
               get_html_detail(stage_name, "Stage Name"),
+              get_html_detail(`Node Type`, "Type"),
               get_html_detail(release_date, "Release Date"),
-              get_html_detail(genre, "Genre (Node)"),
-              get_html_detail(inferred_genre, "Genre (Inferred)"),
-              get_html_detail(notable, "Notable")
+              get_html_detail(genre, "Genre"),
+              get_html_detail(notable, "Notable"),
+              "</span>" # Add this closing span tag
             ),
             group = `Node Type`,
             shape = case_when(
@@ -1055,7 +1057,7 @@ server <- function(input, output, session){
         degree_df_out$degree_scaled <- rescale(degree_df_out$degree)
         nodes_outward_vis <- nodes_outward_vis %>%
           left_join(degree_df_out, by = "id") %>%
-          mutate(size = ifelse(id == sailor_id, 60, degree_scaled))
+          mutate(size = degree_scaled)
         
         # All
         nodes_all_vis <- bind_rows(nodes_inward_vis, nodes_outward_vis) %>%
@@ -2024,20 +2026,8 @@ server <- function(input, output, session){
   })
   
   output$genre_description <- renderUI({
-    HTML(
-      switch(
-        input$summary,
-        
-        #––– Sailor Shift –––
-        "Sailor Shift" = paste0(
-          "<p>Born on a wind-carved archipelago where fishermen tune their nets by humming folk refrains, 
-          Sailor Shift grew up with sea salt in her lungs and a loki flute in her backpack. 
-          Early sets on moonlit piers merged bamboo-wood percussion with hand-me-down cassette loops, foreshadowing the alchemy that would rocket her 2028 single from island radio to global charts. 
-          Each near-annual album since has sailed farther: Oceanus Folk motifs braided with indie-pop hooks, glitchy shoreline field recordings, 
-          and surf-rock guitar that crests like a rising tide. Critics dubbed her “the cartographer of crossover” for mapping new sonic 
-          coastlines while steering her genre’s traditions into fresh waters.</p>"
-    
-        ),
+    HTML(switch(input$summary,
+                "Sailor Shift"   = "… Sailor description …",
                 "Oceanus Folk"   = "… Oceanus description …",
                 "Top Artist"     = "… Top Artist description …",
                 "Rising Stars"  = "… Rising Stars description …"
