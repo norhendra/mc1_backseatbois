@@ -2024,8 +2024,20 @@ server <- function(input, output, session){
   })
   
   output$genre_description <- renderUI({
-    HTML(switch(input$summary,
-                "Sailor Shift"   = "… Sailor description …",
+    HTML(
+      switch(
+        input$summary,
+        
+        #––– Sailor Shift –––
+        "Sailor Shift" = paste0(
+          "<p>Born on a wind-carved archipelago where fishermen tune their nets by humming folk refrains, 
+          Sailor Shift grew up with sea salt in her lungs and a loki flute in her backpack. 
+          Early sets on moonlit piers merged bamboo-wood percussion with hand-me-down cassette loops, foreshadowing the alchemy that would rocket her 2028 single from island radio to global charts. 
+          Each near-annual album since has sailed farther: Oceanus Folk motifs braided with indie-pop hooks, glitchy shoreline field recordings, 
+          and surf-rock guitar that crests like a rising tide. Critics dubbed her “the cartographer of crossover” for mapping new sonic 
+          coastlines while steering her genre’s traditions into fresh waters.</p>"
+    
+        ),
                 "Oceanus Folk"   = "… Oceanus description …",
                 "Top Artist"     = "… Top Artist description …",
                 "Rising Stars"  = "… Rising Stars description …"
