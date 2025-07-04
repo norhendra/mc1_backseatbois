@@ -339,7 +339,7 @@ server <- function(input, output, session){
           multiple = TRUE, width="100%"
         ),
         pickerInput(
-          "top_n_selector","Top N Artists in Genre:",
+          "top_n_selector","Top N (Artists in Genre):",
           choices  = as.character(1:10),
           selected = "5", width="100%"
         ),
@@ -534,7 +534,7 @@ server <- function(input, output, session){
           multiple=TRUE, width="100%"
         ),
         pickerInput(
-          "dist_top_n","Top N (artists or groups):",
+          "dist_top_n","Top N (Groups in Genre):",
           choices=as.character(1:10),
           selected="5", width="100%"
         ),
@@ -642,7 +642,7 @@ server <- function(input, output, session){
         scale_x_discrete(drop=FALSE)+
         labs(title=paste0("Annual Output by ",
                           input$dist_group_selector,
-                          " Members (Dodged)"),
+                          " Members"),
              x="Year",y="Number of Works",color="Artist")+
         theme_minimal(base_size=12)+
         theme(axis.text.x=element_text(angle=45,hjust=1))
