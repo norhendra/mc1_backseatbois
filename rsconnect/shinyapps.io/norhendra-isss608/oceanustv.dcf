@@ -5,7 +5,7 @@ account: norhendra-isss608
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 14977013
-bundleId: 10532639
+bundleId: 10562536
 url: https://norhendra-isss608.shinyapps.io/oceanustv/
 version: 1
 asMultiple: FALSE

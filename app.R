@@ -2007,7 +2007,7 @@ server <- function(input, output, session){
                    "Sailor Shift"   = "sailorshift.png",
                    "Oceanus Folk"   = "OceanusFolk.png",
                    "Top Artist"     = "topartist.png",
-                   "Rising Stars"  = "risingact.png"
+                   "Rising Stars"  = "upcomingact.png"
       ),
       class = "cover-img"
     )
@@ -2027,10 +2027,30 @@ server <- function(input, output, session){
   
   output$genre_description <- renderUI({
     HTML(switch(input$summary,
-                "Sailor Shift"   = "… Sailor description …",
-                "Oceanus Folk"   = "… Oceanus description …",
-                "Top Artist"     = "… Top Artist description …",
-                "Rising Stars"  = "… Rising Stars description …"
+                "Sailor Shift"   = paste0(
+                  "<p><strong>Sailor Shift</strong> is the Oceanus native who is the breakout voice who turned a once-sleepy island folk style into a global phenomenon. Cutting her teeth in beach-side bars with the all-female band Ivy Echoes (2019-2026), Sailor blended traditional Oceanus Folk melodies with modern indie sensibilities. Her 2028 single—an infectious, ocean-tinged anthem—rocketed to #1 worldwide, marking the first time an Oceanus Folk track topped the global charts.</p>",
+                  
+                  "<p>Since that watershed moment she has released a new album nearly every year, each one out-performing the last and weaving in elements of indie pop, indie folk, and singer-songwriter storytelling. Though primarily a solo act, Sailor is renowned for high-profile collaborations that spotlight lesser-known talents—an extension of her twin missions to spread Oceanus Folk and lift emerging artists.</p>",
+                  
+                  "<p>The Influence Explorer turns that story into a living map. Sailor Shift sits at the center when the view loads, surrounded by threads that represent every collaboration, cover, and producer credit in the knowledge graph. The side panel lets you filter by interaction direction or genre to focus on the links you care about. Select a new target artist and the web pivots around that name, revealing how their own connections spread through the scene. It feels like a radio dial for influence: pick an artist, trace the signals, and hear how their sound travels across the musical landscape.</p>"
+                ),
+                "Oceanus Folk"   = paste0(
+                  "<p>Oceanus Folk grew out of a quiet island nation where sea-shanty rhythms, finger-picked guitars and hand-drummed shells once echoed across fishing docks and windy coves. Early lyrics lingered on tides, migration and the tension between staying home and setting sail, giving the style a warm, salt-air nostalgia. Ivy Echoes carried that sound from beach bars to island theatres in the 2010s, adding tight harmonies and studio polish that hinted at wider appeal. Everything changed in 2028 when Sailor Shift’s viral single vaulted Oceanus Folk onto global charts and proved it could sit comfortably beside indie folk and acoustic pop. Today the genre welcomes ambient synths, soft brass and even minimalist electronica, yet still anchors itself in wave-like percussion and coastal storytelling.</p>",
+                  
+                  "<p>The Oceanus Folk Influence Board lets you watch that evolution in motion. Choose inward or outward flow to see whether Oceanus Folk is borrowing ideas or exporting them, then slide the year range to sweep through five decades of cross-genre exchange. The line chart shows cumulative influence for each selected genre and marks Sailor Shift’s 2028 breakthrough so you can track how quickly connections grew after that moment. Below, the network graph refreshes each time you adjust the filters, placing Oceanus Folk at the hub and drawing fresh links to artists, songs and genres that match your settings. Select a single genre to isolate its relationship with Oceanus Folk or pick several to reveal a tangle of collaborations, samples and producer credits. It is a mixing desk for influence, giving you a clear view of how an island sound spread, adapted and continues to shape the wider musical landscape.</p>"
+                  
+                  
+                ),
+                "Top Artist"     = paste0(
+                  "<p>Spin up Oceanus TV’s Artist/Group Spotlight and watch the leaderboard come alive. Choose the genres you are craving, from mist-soaked Oceanus Folk to fuzz-laden Alternative Rock, and our engine sweeps the knowledge graph in an instant. For every genre it draws a bar split into turquoise Notable hits and salmon deep cuts, so you can see whether the scene is built on a few cult classics or a whole tide of playlist staples. Just beneath that pulse line a simple Top N dropdown, from one to ten, lets you decide how many headliners step up. Pick a number and the green ranking bars reshuffle on the spot, ordering performers by the count of notable songs they command. Whether you are hunting a new collaboration partner, building tomorrow’s set list, or simply feeding your headphones something fresh, the Spotlight turns raw data into a clear picture of who is lighting up each shoreline.</p>",
+                  
+                  "<p>Flip to the next page and the view zooms into each featured artist. Compact timelines show turquoise bars for every year an artist released notable material while a red line traces the far rarer songs that actually charted. Beneath those timelines a blush-pink bar totals each catalogue of notable tracks, and a matching pie chart reveals what share of that catalogue carries the Notable stamp. A small discography with a solid-green pie signals a heavyweight hit maker, while a sprawling catalogue with a thinner slice hints at a prolific explorer still chasing a defining anthem. Together these panels turn statistics into stories of momentum and influence, giving Oceanus TV listeners both the headline leaderboard and the deeper liner notes on when lightning truly struck.</p>"
+                ),
+                "Rising Stars"  = paste0(
+                  "<p>Welcome to Rising Stars, the studio corner where we tune in to the future of every scene. Pick a genre in the sidebar and watch the line chart spark to life. Each coloured track marks a fresh voice, and every jump in the curve shows the exact year they dropped a notable song. A sudden spike means a beach-bar prodigy just broke through, a gentle climb tells the story of a bedroom producer gaining steady traction. The scrollable legend on the right reads like a festival poster so you can match each surge to the artist behind it.</p>",
+                  
+                  "<p>Think of this tab as a countdown clock for hype. Shift between genres to see which sound is heating up fastest, then flag the names riding the steepest curves for heavy rotation. Here at Oceanus TV we do more than spin the hits; we spot tomorrow’s anthems before they crest the airwaves.</p>"
+                ),
     ))
   })
   
