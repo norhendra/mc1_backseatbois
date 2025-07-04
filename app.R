@@ -383,6 +383,7 @@ server <- function(input, output, session){
   
   # Render A–E  
   output$linePlots <- renderPlot({
+    tryCatch({
     req(input$genre_selector)
     top_n <- as.numeric(input$top_n_selector)
     selected_persons <- input$person_selector
@@ -420,6 +421,7 @@ server <- function(input, output, session){
       pA <- ggplot(dfA,aes(
         x=fct_reorder(Person,NotableSongs),y=NotableSongs
       ))+
+        
         geom_col(fill="darkgreen")+coord_flip()+
         facet_wrap(~genre,scales="free_y",ncol=2)+
         labs(title=paste0("Top ",top_n," Artists by Notable Songs"),
@@ -470,28 +472,49 @@ server <- function(input, output, session){
         labs(title="Notable vs. Charted Songs by Year",x="Year",y="Song Count")+
         theme_minimal(base_size=12)
       # Plot E
-      pies <- lapply(selected_persons,function(person){
-        idx <- which(nodes_tbl$name==person)
+      pies <- lapply(selected_persons, function(person){
+        idx <- which(nodes_tbl$name == person)
         tbl <- edges_idx %>%
-          filter(`Edge Type`%in%c("ComposerOf","PerformerOf"),from==idx) %>%
-          left_join(nodes_tbl%>%filter(`Node Type`=="Song")%>%select(idx,notable),
-                    by=c("to"="idx")) %>%
-          mutate(Notable=ifelse(notable,"Yes","No")) %>%
-          count(Notable)%>%arrange(Notable)%>%
+          filter(`Edge Type` %in% c("ComposerOf","PerformerOf"), from == idx) %>%
+          left_join(nodes_tbl %>% filter(`Node Type`=="Song") %>% select(idx, notable),
+                    by = c("to"="idx")) %>%
+          mutate(Notable = ifelse(notable, "Yes","No")) %>%
+          count(Notable) %>%
+          arrange(Notable) %>%
           mutate(
-            percentage=round(n/sum(n)*100,1),
-            label=paste0(Notable,"\n",n," (",percentage,"% )")
+            percentage = round(n / sum(n) * 100, 1),
+            label = paste0(Notable, "\n", n, " (", percentage, "%)")
           )
-        ggplot(tbl,aes(x="",y=n,fill=Notable))+
-          geom_col(width=1)+coord_polar("y",start=0)+
-          scale_fill_manual(values=c(Yes="#33a02c",No="#ff7f00"))+
-          geom_text(aes(label=label),position=position_stack(vjust=0.5),size=3)+
-          labs(title=person,x=NULL,y=NULL)+theme_void()+
-          theme(plot.title=element_text(size=10))
+        ggplot(tbl, aes(x="", y=n, fill=Notable)) +
+          geom_col(width=1) +
+          coord_polar("y", start=0) +
+          scale_fill_manual(values = c(Yes="#33a02c", No="#ff7f00")) +
+          geom_text(aes(label=label), position=position_stack(vjust=0.5), size=3) +
+          labs(title = person, x = NULL, y = NULL) +
+          theme_void() +
+          theme(plot.title = element_text(size=10))
       })
-      pE <- arrangeGrob(grobs=pies,ncol=length(pies))
-      grid.arrange(grobs=list(pC,pD,pE),layout_matrix=rbind(c(2,2),c(1,3)))
+      
+      # figure out columns/rows for the pies
+      n_pies <- length(pies)
+      cols_pies <- if (n_pies <= 2) n_pies else 2
+      
+      # arrange them into at most 2 columns
+      pies_grob <- arrangeGrob(grobs = pies, ncol = cols_pies)
+      
+      # now lay out C, D and our dynamic pies panel:
+      grid.arrange(
+        grobs = list(pC, pD, pies_grob),
+        layout_matrix = rbind(
+          c(2, 2),   # pD spans both columns
+          c(1, 3)    # pC left, pies on the right
+        )
+      )
     }
+    }, error = function(e) {
+      plot.new()
+      text(0.5, 0.5, "No data available for selected genre(s)", cex = 1.3)
+    })
   })
   
   # ─────────────────────────────────────────────────
@@ -539,6 +562,7 @@ server <- function(input, output, session){
   # Group Spotlight plots
   
   output$distPlots <- renderPlot({
+    tryCatch({
     req(input$dist_genre_selector)
     top_n <- as.numeric(input$dist_top_n)
     
@@ -623,6 +647,10 @@ server <- function(input, output, session){
         theme_minimal(base_size=12)+
         theme(axis.text.x=element_text(angle=45,hjust=1))
     }
+    }, error = function(e) {
+      plot.new()
+      text(0.5, 0.5, "No data available for selected genre(s)", cex = 1.3)
+    })
   })
   
   # ─────────────────────────────────────────────────
@@ -630,6 +658,8 @@ server <- function(input, output, session){
   
   output$risingPlot <- renderPlotly({
     req(input$star_genre)
+    
+    tryCatch({
     
     ivy_id_map <- nodes_tbl%>%mutate(ivy_row=row_number())%>%select(id,ivy_row)
     ivy_edges  <- links_tbl%>%
@@ -692,6 +722,14 @@ server <- function(input, output, session){
       )
     ggplotly(static_gg,tooltip=c("x","y","colour"))%>%
       layout(legend=list(itemclick="toggleothers",itemdoubleclick="toggle"))
+    
+    }, error = function(e) {
+      # on any error, show this empty‐plot message
+      p_empty <- ggplot() +
+        theme_void() +
+        ggtitle("No data available for selected genre(s)")
+      ggplotly(p_empty)
+    })
   })
   
   
